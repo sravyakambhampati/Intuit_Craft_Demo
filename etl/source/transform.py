@@ -62,7 +62,8 @@ def filter_top_n_ranked_universities(df: DataFrame, n) -> DataFrame:
     """
     df.printSchema()
     window = Window.orderBy(["world_rank", F.desc("year")])
-    top_n_universities = df.withColumn("new_world_ranking", F.row_number().over(window)).filter(F.col("new_world_ranking") <= n)
+    top_n_universities = df.withColumn("new_world_ranking", F.row_number().over(window)).filter(
+        F.col("new_world_ranking") <= n)
     return top_n_universities
 
 
@@ -83,17 +84,23 @@ def calculate_state_trends(admissions_df: DataFrame) -> DataFrame:
     return state_trends
 
 
-def calculate_state_trends_global(admissions_with_ranking: DataFrame) -> DataFrame:
+def calculate_state_trends_yearly(college_data: DataFrame, college_adm: DataFrame,
+                                  college_adm_selected_apps: DataFrame) -> DataFrame:
     """
     Calculate state-wise trends for the number of applicants and admissions per year.
+    First, add a column with state abbreviation. Union college data and admissions data assuming college data is 2016 and college data is from 2015
 
     Args:
-        admissions_with_ranking (pyspark.sql.DataFrame): Input DataFrame containing admissions data with ranking.
+        college_data (pyspark.sql.DataFrame): Input DataFrame containing college_data.
+        college_adm : Input DataFrame containing college admissions
 
     Returns:
         pyspark.sql.DataFrame: DataFrame with state-wise trends per year.
     """
-    state_trends = admissions_with_ranking.groupBy("state_abbreviation", "year").agg(
+    college_data_2016 = college_data.join(college_adm, on=["Name"], how="inner").withColumn("year", F.lit(2016))
+    admissions_data_2015 = college_adm_selected_apps.withColumn("year", F.lit(2015))
+    college_data_2015_2016 = admissions_data_2015.union(college_data_2016)
+    state_trends = college_data_2015_2016.dropna().groupBy("state_abbreviation", "year").agg(
         F.sum("applicants_total").alias("total_applicants"),
         F.sum("admissions_total").alias("total_admissions")
     )

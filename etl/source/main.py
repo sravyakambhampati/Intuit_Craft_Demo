@@ -1,7 +1,7 @@
 from extract import extract_from_sources
 from utils import initialize_spark_session, rename_columns, get_colleges_apply_vs_high_probability, clean_data
 from transform import get_last_known_global_ranking, join_admissions_with_ranking, filter_and_pivot_ranking, \
-    filter_top_n_ranked_universities, calculate_state_trends, calculate_state_trends_global
+    filter_top_n_ranked_universities, calculate_state_trends, calculate_state_trends_yearly
 from load import save_as
 
 if __name__ == '__main__':
@@ -36,7 +36,9 @@ if __name__ == '__main__':
     college_adm_sat_scores_selected = college_adm.select("Name", "reading_25_percentile", "reading_75_percentile",
                                                          "math_25_percentile", "math_75_percentile",
                                                          "writing_25_percentile", "writing_75_percentile")
-
+    college_data_selected = college_data.select("_c0", "Apps", "Accept").distinct().withColumnRenamed("_c0", "Name")
+    college_adm_selected_state_abb = college_adm.select("Name", "State_abbreviation").distinct()
+    college_adm_selected_apps = college_adm.select("Name", "Applicants_total", "Admissions_total","State_abbreviation")
     # Get the last known global ranking for each institution
     last_known_global_ranking = get_last_known_global_ranking(uni_glb_rnk_selected)
     # Join admissions data with the last known global ranking data
@@ -57,8 +59,8 @@ if __name__ == '__main__':
     save_as(state_trends, "etl/output/state_trends", "parquet")
 
     # Trends by state with respect to the number of applicants vs admissions per year
-    state_trends_global_rank_year_df = calculate_state_trends_global(admissions_with_ranking)
-    save_as(state_trends_global_rank_year_df, "etl/output/state_trends_rank", "parquet")
+    state_trends_year_df = calculate_state_trends_yearly(college_data_selected, college_adm_selected_state_abb, college_adm_selected_apps)
+    save_as(state_trends_year_df, "etl/output/state_trends_year", "parquet")
 
     # Recommended Colleges to apply and list of colleges that has high probability of giving admissions
     applicant_score = {
