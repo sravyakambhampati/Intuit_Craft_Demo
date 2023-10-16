@@ -2,45 +2,71 @@ version: 2.1
 
 jobs:
   build:
-    working_directory: ~/circleci-python
     docker:
-      - image: "circleci/python:3.8.9"
+      - image: circleci/python:3.8.9
+
     steps:
       - checkout
-      # Set up your virtual environment
-      - run:
-          name: Set up virtual environment
-          command: |
-            python -m venv venv
-            . venv/bin/activate
 
-      # Install project dependencies
-      - run:
-          name: Install dependencies
-          command: pip install -r requirements.txt
-
+      # Set up Java (adjust the version as needed)
       - run:
           name: Install Java
           command: |
-            # Install Java here if it's not already available
-            # For example, you can use a package manager to install OpenJDK
-            apt-get update
-            apt-get install openjdk-8-jre -y
+            sudo apt-get update && sudo apt-get install -y openjdk-8-jre
+            echo 'export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64' >> $BASH_ENV
+            echo 'export PATH=$PATH:$JAVA_HOME/bin' >> $BASH_ENV
+            source $BASH_ENV
 
-      - run: spark-submit --master local --num-executors 2 --executor-memory 1g etl/source/main.py
+      # Install dependencies and run Spark code
+      - run:
+          name: Build and Run Spark Code
+          command: |
+            # Navigate to your project directory
+            cd Intuit_Craft_Demo
+
+            # Activate your virtual environment (modify the path if needed)
+            source venv/bin/activate
+
+            # Install required Python packages
+            pip install -r requirements.txt
+
+            # Run your Spark job (adjust the command as needed)
+            spark-submit --master local --num-executors 2 --executor-memory 1g etl/source/main.py
+
   test:
-    working_directory: ~/circleci-python
     docker:
-      - image: "circleci/python:3.8.9"
+      - image: circleci/python:3.8.9
+
     steps:
       - checkout
-      - run: pytest
+
+      # Set up Java
+      - run:
+          name: Install Java
+          command: |
+            sudo apt-get update && sudo apt-get install -y openjdk-8-jre
+            echo 'export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64' >> $BASH_ENV
+            echo 'export PATH=$PATH:$JAVA_HOME/bin' >> $BASH_ENV
+            source $BASH_ENV
+
+      # Activate your virtual environment (modify the path if needed)
+      - run:
+          name: Activate Virtual Environment
+          command: source venv/bin/activate
+
+      # Install required Python packages
+      - run:
+          name: Install Python Packages
+          command: pip install -r requirements.txt
+
+      # Run your tests (modify the test runner command as needed)
+      - run:
+          name: Run Tests
+          command: pytest tests/
 
 workflows:
+  version: 2
   build_and_test:
     jobs:
       - build
-      - test:
-          requires:
-            - build
-
+      - test
