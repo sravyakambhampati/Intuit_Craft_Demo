@@ -1,0 +1,38 @@
+version: 2.1
+
+jobs:
+  build:
+    working_directory: ~/circleci-python
+    docker:
+      - image: "circleci/python:3.8.9"
+    steps:
+      - checkout
+      # Set up your virtual environment
+      - run:
+          name: Set up virtual environment
+          command: |
+            python -m venv venv
+            . venv/bin/activate
+
+      # Install project dependencies
+      - run:
+          name: Install dependencies
+          command: pip install -r requirements.txt
+
+      - run: spark-submit --master local --num-executors 2 --executor-memory 1g etl/source/main.py
+  test:
+    working_directory: ~/circleci-python
+    docker:
+      - image: "circleci/python:3.8.9"
+    steps:
+      - checkout
+      - run: pytest
+
+workflows:
+  build_and_test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
+
