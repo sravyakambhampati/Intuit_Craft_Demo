@@ -19,6 +19,14 @@ jobs:
           name: Install dependencies
           command: pip install -r requirements.txt
 
+      - run:
+          name: Install Java
+          command: |
+            # Install Java here if it's not already available
+            # For example, you can use a package manager to install OpenJDK
+            apt-get update
+            apt-get install openjdk-8-jre -y
+
       - run: spark-submit --master local --num-executors 2 --executor-memory 1g etl/source/main.py
   test:
     working_directory: ~/circleci-python
