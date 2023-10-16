@@ -22,7 +22,7 @@ jobs:
           name: Build and Run Spark Code
           command: |
             # Navigate to your project directory
-            cd Intuit_Craft_Demo
+            cd /Intuit_Craft_Demo
 
             # Activate your virtual environment (modify the path if needed)
             source venv/bin/activate
@@ -52,7 +52,7 @@ jobs:
       # Activate your virtual environment (modify the path if needed)
       - run:
           name: Activate Virtual Environment
-          command: source venv/bin/activate
+          command: source ./venv/bin/activate
 
       # Install required Python packages
       - run:
