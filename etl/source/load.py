@@ -1,4 +1,7 @@
-def save_as(data, output_path, file_format="parquet"):
+from pyspark.sql import DataFrame
+
+
+def save_as(data: DataFrame, output_path: str, file_format="parquet"):
     """
     Save data as Parquet or ORC
     :param data: The pyspark dataframe

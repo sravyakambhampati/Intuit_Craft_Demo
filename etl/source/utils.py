@@ -1,5 +1,5 @@
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, isnan, when, regexp_replace, desc, count
+from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql.functions import col, isnan, when, regexp_replace, count
 
 
 def initialize_spark_session(app_name):
@@ -14,7 +14,7 @@ def initialize_spark_session(app_name):
     return spark
 
 
-def rename_columns(input_df, columns_mapping):
+def rename_columns(input_df: DataFrame, columns_mapping) -> DataFrame:
     """
     Rename columns in a PySpark DataFrame based on a mapping.
     Args:
@@ -28,16 +28,17 @@ def rename_columns(input_df, columns_mapping):
     return input_df
 
 
-def get_null_counts(input_df):
+def get_null_counts(input_df: DataFrame) -> DataFrame:
     """
     Get the count of null or NaN values in each column of a DataFrame.
     Args:
-        df (DataFrame): The input DataFrame.
+        input_df (DataFrame): The input DataFrame.
+    :returns: Dataframe that contains count of null, nan or empty cells
     """
     return input_df.select([count(when(col(c).isNull() | isnan(col(c)), c)).alias(c) for c in input_df.columns])
 
 
-def clean_data(dataframe, columns):
+def clean_data(dataframe: DataFrame, columns: list) -> DataFrame:
     """
     Cleans if any special characters exist in columns
     :param dataframe: Input data frame

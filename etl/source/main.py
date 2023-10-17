@@ -1,17 +1,20 @@
 from extract import extract_from_sources
 from utils import initialize_spark_session, rename_columns, clean_data
 from transform import get_last_known_global_ranking, join_admissions_with_ranking, filter_and_pivot_ranking, \
-    filter_top_n_ranked_universities, calculate_state_trends, calculate_state_trends_yearly, get_colleges_apply_vs_high_probability
+    filter_top_n_ranked_universities, calculate_state_trends, calculate_state_trends_yearly, \
+    get_colleges_apply_vs_high_probability
 from load import save_as
 
 if __name__ == '__main__':
     spark = initialize_spark_session("CollegeAdmissionsETL")
+    # Extract data from input files
     options = {"header": "true", "inferSchema": "true"}
     college_data = extract_from_sources(spark, "etl/data/College_Data.csv", "csv", options)
     uni_glb_rnk = extract_from_sources(spark, "etl/data/Universities_Global_Ranking.csv", "csv", options)
     college_adm = extract_from_sources(spark, "etl/data/College_Admissions.csv", "csv", options)
     uni_data = extract_from_sources(spark, "etl/data/University_Data.csv", "csv", options)
 
+    # Rename columns and clean data
     columns_mapping = {
         "Applicants total": "Applicants_total",
         "Admissions total": "Admissions_total",
@@ -29,6 +32,7 @@ if __name__ == '__main__':
     college_adm = rename_columns(college_adm, columns_mapping)
     uni_glb_rnk = clean_data(uni_glb_rnk, ["institution"])
     college_adm = clean_data(college_adm, ["Name"])
+
     # Select required columns
     uni_glb_rnk_selected = uni_glb_rnk.select("institution", "world_rank", "national_rank", "country", "year")
     college_adm_selected = college_adm.select("Name", "Applicants_total", "Admissions_total", "Enrolled_total",
@@ -38,7 +42,10 @@ if __name__ == '__main__':
                                                          "writing_25_percentile", "writing_75_percentile")
     college_data_selected = college_data.select("_c0", "Apps", "Accept").distinct().withColumnRenamed("_c0", "Name")
     college_adm_selected_state_abb = college_adm.select("Name", "State_abbreviation").distinct()
-    college_adm_selected_apps = college_adm.select("Name", "Applicants_total", "Admissions_total","State_abbreviation")
+    college_adm_selected_apps = college_adm.select("Name", "Applicants_total", "Admissions_total", "State_abbreviation")
+    """
+    Design a data flow providing the trends of university by their global ranking and number of applicants vs admissions
+    """
     # Get the last known global ranking for each institution
     last_known_global_ranking = get_last_known_global_ranking(uni_glb_rnk_selected)
     # Join admissions data with the last known global ranking data
@@ -47,6 +54,9 @@ if __name__ == '__main__':
     # Write dataset to a parquet file
     save_as(admissions_with_ranking, "etl/output/global_rnk_trends", "parquet")
 
+    """
+    Provide the trends data set for top 1000 universities
+    """
     # Top 1000 universities
     pivot_by_year = filter_and_pivot_ranking(uni_glb_rnk_selected)
     save_as(pivot_by_year, "etl/output/top_universities_per_year", "parquet")
@@ -54,15 +64,18 @@ if __name__ == '__main__':
     top_n_ranked_universities = filter_top_n_ranked_universities(last_known_global_ranking, 1000)
     save_as(top_n_ranked_universities, "etl/output/top_n_ranked_universities", "parquet")
 
-    # Trends by state with respect to the number of applicants vs admissions
+    """
+    Provide the trends by state with respect to the number of applicants vs admissions per year
+    """
     state_trends = calculate_state_trends(college_adm_selected)
     save_as(state_trends, "etl/output/state_trends", "parquet")
 
     # Trends by state with respect to the number of applicants vs admissions per year
-    state_trends_year_df = calculate_state_trends_yearly(college_data_selected, college_adm_selected_state_abb, college_adm_selected_apps)
+    state_trends_year_df = calculate_state_trends_yearly(college_data_selected, college_adm_selected_state_abb,
+                                                         college_adm_selected_apps)
     save_as(state_trends_year_df, "etl/output/state_trends_year", "parquet")
 
-    # Recommended Colleges to apply and list of colleges that has high probability of giving admissions
+    # Given Applicant SAT score, recommended colleges to apply and list of colleges that has high probability of giving admissions
     applicant_score = {
         "sat_reading_score": 500,
         "sat_writing_score": 550,
@@ -73,4 +86,3 @@ if __name__ == '__main__':
     recommended, high_probability = get_colleges_apply_vs_high_probability(applicant_score, sat_scores)
     save_as(recommended, "etl/output/recommended", "parquet")
     save_as(high_probability, "etl/output/high_probability", "parquet")
-
