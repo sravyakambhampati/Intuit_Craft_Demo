@@ -1,7 +1,7 @@
 from extract import extract_from_sources
-from utils import initialize_spark_session, rename_columns, get_colleges_apply_vs_high_probability, clean_data
+from utils import initialize_spark_session, rename_columns, clean_data
 from transform import get_last_known_global_ranking, join_admissions_with_ranking, filter_and_pivot_ranking, \
-    filter_top_n_ranked_universities, calculate_state_trends, calculate_state_trends_yearly
+    filter_top_n_ranked_universities, calculate_state_trends, calculate_state_trends_yearly, get_colleges_apply_vs_high_probability
 from load import save_as
 
 if __name__ == '__main__':

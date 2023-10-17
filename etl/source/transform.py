@@ -1,6 +1,7 @@
 import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 from pyspark.sql import DataFrame
+from pyspark.sql.functions import col, when, desc
 
 
 def get_last_known_global_ranking(uni_glb_rnk: DataFrame) -> DataFrame:
@@ -105,3 +106,34 @@ def calculate_state_trends_yearly(college_data: DataFrame, college_adm: DataFram
         F.sum("admissions_total").alias("total_admissions")
     )
     return state_trends
+
+
+def get_colleges_apply_vs_high_probability(applicant_scores, df) -> DataFrame:
+    """
+    Filter colleges based on applicant's SAT scores and return colleges to apply and high probability colleges.
+    Args:
+        applicant_scores (dict): Dictionary containing SAT scores.
+        df (DataFrame): DataFrame containing SAT scores.
+    Returns:
+        DataFrame: Recommended colleges to apply.
+        DataFrame: High probability colleges.
+    """
+    filtered_colleges = df.withColumn("colleges_recommended", when(
+        (col("reading_25_percentile") <= applicant_scores["sat_reading_score"]) &
+        (col("math_25_percentile") <= applicant_scores["sat_math_score"]) &
+        (col("writing_25_percentile") <= applicant_scores["sat_writing_score"]), 1).otherwise(0))
+
+    recommended = filtered_colleges.filter(col("colleges_recommended") == 1).orderBy(desc("reading_25_percentile"),
+                                                                                     desc("writing_25_percentile"),
+                                                                                     desc("math_25_percentile"))
+
+    filtered_colleges = filtered_colleges.withColumn("high_prob_colleges", when(
+        (col("reading_75_percentile") <= applicant_scores["sat_reading_score"]) &
+        (col("math_75_percentile") <= applicant_scores["sat_math_score"]) &
+        (col("writing_75_percentile") <= applicant_scores["sat_writing_score"]), 1).otherwise(0))
+
+    high_probability = filtered_colleges.filter(col("high_prob_colleges") == 1).orderBy(desc("reading_75_percentile"),
+                                                                                        desc("writing_75_percentile"),
+                                                                                        desc("math_75_percentile"))
+
+    return recommended, high_probability
