@@ -31,3 +31,11 @@ def test_save_as_orc(spark_session, tmpdir):
 
     # Check if the ORC file exists
     assert os.path.exists(output_path)
+
+
+def test_save_as_invalid_format(spark_session, tmpdir):
+    data = spark_session.createDataFrame([(1, "Alice"), (2, "Bob")], ["id", "name"])
+    output_path = os.path.join(tmpdir, "invalid_output")
+
+    with pytest.raises(ValueError):
+        save_as(data, output_path, "invalid_format")

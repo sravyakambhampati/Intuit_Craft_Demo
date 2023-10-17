@@ -14,3 +14,6 @@ def save_as(data: DataFrame, output_path: str, file_format="parquet"):
         data.write.parquet(output_path, mode="overwrite")
     elif file_format == "orc":
         data.write.orc(output_path, mode="overwrite")
+    else:
+        raise ValueError
+

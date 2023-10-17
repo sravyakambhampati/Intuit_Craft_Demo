@@ -20,3 +20,11 @@ def test_extract_from_sources(spark_session, file_format, options, expected_colu
     print(df.columns)
 
     assert df.columns == expected_columns
+
+
+def test_extract_from_sources_unsupported_format(spark_session):
+    file_path = "tests_data/sample."
+    file_format = "txt"
+
+    with pytest.raises(ValueError):
+        extract_from_sources(spark_session, file_path, file_format)

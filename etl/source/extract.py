@@ -16,5 +16,7 @@ def extract_from_sources(spark, file_path: str, file_format: str, options=None) 
     """
     if file_format == "csv":
         return spark.read.csv(file_path, **options)
-    else:
+    elif file_format in ("orc", "parquet", "avro"):
         return spark.read.format(file_format).load(file_path)
+    else:
+        raise ValueError
