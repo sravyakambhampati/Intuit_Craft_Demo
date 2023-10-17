@@ -2,7 +2,8 @@
 
 Clone this repo to local system
 
-Pycharm
+Pycharm IDE:
+
 To run the source code:
 Open the project. In terminal give following command to submit the pyspark code in local mode
 spark-submit --master local --num-executors 2 --executor-memory 1g etl/source/main.py 
